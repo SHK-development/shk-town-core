@@ -1,6 +1,7 @@
 package kr.shkworld.shktown.config;
 
 import kr.shkworld.shktown.core.navigation.model.Position;
+import kr.shkworld.shktown.core.taxi.model.TaxiFarePolicy;
 import kr.shkworld.shktown.ui.apps.taxi.TaxiMapManager;
 import kr.shkworld.shktown.util.GUIUtil;
 import org.bukkit.Material;
@@ -9,6 +10,7 @@ import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.java.JavaPlugin;
 
+import java.math.BigDecimal;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -16,8 +18,31 @@ public final class TaxiConfigLoader {
     private TaxiConfigLoader() {
     }
 
+    private static TaxiFarePolicy loadFarePolicy(
+            FileConfiguration config
+    ) {
+        ConfigurationSection fare = config.getConfigurationSection("fare");
+
+        if (fare == null) {
+            throw new IllegalArgumentException("Missing fare section in configs/taxi.yml");
+        }
+
+        Number baseDistance = requireNumber(fare, "base_distance");
+        Number baseFare = requireNumber(fare, "base_fare");
+        Number extraDistance = requireNumber(fare, "extra_distance");
+        Number extraFare = requireNumber(fare, "extra_fare");
+
+        return new TaxiFarePolicy(
+                baseDistance.doubleValue(),
+                new BigDecimal(baseFare.toString()),
+                extraDistance.doubleValue(),
+                new BigDecimal(extraFare.toString())
+        );
+    }
+
     public static void loadTaxiConfig(JavaPlugin plugin, FileConfiguration config, TaxiMapManager mapManager) {
         if (config == null || mapManager == null) return;
+        mapManager.setFarePolicy(loadFarePolicy(config));
 
         Map<String, Position> positions = new HashMap<>();
         Map<String, ItemStack> stopItems = new HashMap<>();
@@ -125,5 +150,18 @@ public final class TaxiConfigLoader {
         return GUIUtil.createItem(material != null ? material : Material.PAPER,
                 section != null ? section.getString("name", defaultName) : defaultName,
                 section != null ? section.getString("model_data", section.getString("model_name", "0")) : "0", lore);
+    }
+
+    private static Number requireNumber(
+            ConfigurationSection section,
+            String key
+    ) {
+        Object value = section.get(key);
+
+        if (!(value instanceof Number number)) {
+            throw new IllegalArgumentException(key + " is not a number");
+        }
+
+        return number;
     }
 }

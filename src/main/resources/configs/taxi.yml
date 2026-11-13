@@ -1,3 +1,9 @@
+fare:
+  base_distance: 200  # 기본요금에 포함되는 거리
+  base_fare: 3800     # 기본요금
+  extra_distance: 13  # 기본거리 초과 시 추가요금이 붙는 거리 단위
+  extra_fare: 100     # 거리 단위마다 추가되는 요금
+
 settings:
   default_map: "map_0_0"
 

@@ -2,6 +2,7 @@ package kr.shkworld.shktown.ui.apps.taxi;
 
 import kr.shkworld.shktown.SHKTown;
 import kr.shkworld.shktown.core.navigation.model.Position;
+import kr.shkworld.shktown.core.taxi.model.TaxiFarePolicy;
 import kr.shkworld.shktown.util.MessageUtil;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
@@ -10,6 +11,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class TaxiMapManager {
+    private TaxiFarePolicy farePolicy;
     private final SHKTown plugin;
     private final Map<String, TaxiMapScreen> mapScreens = new HashMap<>();
     private final Map<String, TaxiMapScreen> npcMapScreens = new HashMap<>();
@@ -67,6 +69,21 @@ public class TaxiMapManager {
         }
 
         player.openInventory(screen.getInventory());
+    }
+
+    public void setFarePolicy(TaxiFarePolicy farePolicy) {
+        this.farePolicy = java.util.Objects.requireNonNull(
+                farePolicy,
+                "farePolicy"
+        );
+    }
+
+    public TaxiFarePolicy getFarePolicy() {
+        if (farePolicy == null) {
+            throw new IllegalStateException("Taxi fare policy has not been loaded");
+        }
+
+        return farePolicy;
     }
 
     public void configureAccess(ItemStack taxiCallPass, String noCallPassMessage,
