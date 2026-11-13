@@ -23,6 +23,7 @@ import kr.shkworld.shktown.database.repository.LogRepositoryImpl;
 import kr.shkworld.shktown.database.repository.TransactionRepositoryImpl;
 import kr.shkworld.shktown.database.repository.UserRepositoryImpl;
 import kr.shkworld.shktown.integration.luckperms.LuckPermsHook;
+import kr.shkworld.shktown.integration.vault.VaultEconomyHook;
 import kr.shkworld.shktown.integration.worldguard.WorldGuardHook;
 import kr.shkworld.shktown.listener.EventManager;
 import kr.shkworld.shktown.ui.apps.SmartphoneManager;
@@ -58,9 +59,20 @@ public class SHKTown extends JavaPlugin {
         public void severe(String message) { getLogger().severe(message); }
     };
 
+    private final VaultEconomyHook vaultEconomyHook = new VaultEconomyHook();
+
     @Override
     public void onEnable() {
         saveDefaultConfig();
+
+        vaultEconomyHook.findProvider().ifPresentOrElse(
+                economy -> getLogger().info(
+                        "Vault economy provider: " + economy.getName()
+                ),
+                () -> getLogger().warning(
+                        "Vault economy provider is unavailable."
+                )
+        );
 
         try {
             DatabaseManager.getInstance().setup(this);
@@ -144,4 +156,6 @@ public class SHKTown extends JavaPlugin {
     public ShopManager getShopManager() {
         return shopManager;
     }
+
+    public VaultEconomyHook getVaultEconomyHook() { return vaultEconomyHook; }
 }

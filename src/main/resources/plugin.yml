@@ -1,9 +1,10 @@
 name: SHKTown
-version: 1.0
+version: 1.2
 main: kr.shkworld.shktown.SHKTown
-api-version: 1.21
+api-version: '26.3'
 
-soft-depend: [LuckPerms, WorldGuard]
+depend: [BetterHud, CraftEngine, Vault, Citizens]
+softdepend: [Essentials, LuckPerms, WorldGuard]
 
 commands:
   shktown:
