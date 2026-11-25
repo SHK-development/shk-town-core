@@ -1,5 +1,5 @@
-life:
-  license:
+license:
+  life:
     tutorial-grant:
       # 튜토리얼 완료 시 새로 발급할 자격. 빈 목록이면 자동 지급을 생략한다.
       types:
@@ -10,3 +10,8 @@ life:
       # 새로 발급되는 자격에만 적용된다.
       initial-grade: 9
       initial-experience: 0
+
+  professional:
+    slots:
+      base: 3
+      maximum: 9

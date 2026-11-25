@@ -1,4 +1,4 @@
-package kr.shkworld.shktown.life.license;
+package kr.shkworld.shktown.license.life;
 
 import kr.shkworld.shktown.license.LicenseType;
 import kr.shkworld.shktown.license.PlayerLicenseRepository;

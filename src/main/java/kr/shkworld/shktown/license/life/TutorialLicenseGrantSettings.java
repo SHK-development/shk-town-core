@@ -1,4 +1,4 @@
-package kr.shkworld.shktown.life.license;
+package kr.shkworld.shktown.license.life;
 
 import kr.shkworld.shktown.license.LicenseCategory;
 import kr.shkworld.shktown.license.LicenseType;
@@ -14,7 +14,7 @@ public record TutorialLicenseGrantSettings(
         types = List.copyOf(types);
 
         if (new HashSet<>(types).size() != types.size()) {
-            throw new IllegalArgumentException("config.yml의 life.license.tutorial-grant.types에 중복된 라이센스가 있습니다.");
+            throw new IllegalArgumentException("config.yml의 license.life.tutorial-grant.types에 중복된 라이센스가 있습니다.");
         }
         for (var type : types) {
             if (type.getCategory() != LicenseCategory.LIFE) {
@@ -22,16 +22,16 @@ public record TutorialLicenseGrantSettings(
             }
         }
         if (initialGrade < 1 || initialGrade > 9) {
-            throw new IllegalArgumentException("config.yml의 life.license.tutorial-grant.initial-grade는 1~9 사이어야 합니다.");
+            throw new IllegalArgumentException("config.yml의 license.life.tutorial-grant.initial-grade는 1~9 사이어야 합니다.");
         }
         if (initialExperience < 0) {
-            throw new IllegalArgumentException("config.yml의 life.license.tutorial-grant.initial-experience는 0 이상이어야 합니다.");
+            throw new IllegalArgumentException("config.yml의 license.life.tutorial-grant.initial-experience는 0 이상이어야 합니다.");
         }
     }
 
     public static TutorialLicenseGrantSettings from(Map<String, Object> values) {
         if (!(values.get("types") instanceof List<?> ids)) {
-            throw new IllegalArgumentException("config.yml의 life.license.tutorial-grant.types에는 라이선스 ID 목록이 필요합니다.");
+            throw new IllegalArgumentException("config.yml의 license.life.tutorial-grant.types에는 라이선스 ID 목록이 필요합니다.");
         }
 
         var types = new ArrayList<LicenseType>();
@@ -39,7 +39,7 @@ public record TutorialLicenseGrantSettings(
             var type = Arrays.stream(LicenseType.values())
                     .filter(candidate -> candidate.getId().equals(id))
                     .findFirst()
-                    .orElseThrow(() -> new IllegalArgumentException("config.yml의 life.license.tutorial-grant.types에 알 수 없는 라이선스 ID가 있습니다:" + id));
+                    .orElseThrow(() -> new IllegalArgumentException("config.yml의 license.life.tutorial-grant.types에 알 수 없는 라이선스 ID가 있습니다:" + id));
             types.add(type);
         }
 
@@ -50,6 +50,6 @@ public record TutorialLicenseGrantSettings(
         if (values.get(key) instanceof Integer value) {
             return value;
         }
-        throw new IllegalArgumentException("config.yml의 life.license.tutorial-grant." + key + "에는 정수가 필요합니다.");
+        throw new IllegalArgumentException("config.yml의 license.life.tutorial-grant." + key + "에는 정수가 필요합니다.");
     }
 }
