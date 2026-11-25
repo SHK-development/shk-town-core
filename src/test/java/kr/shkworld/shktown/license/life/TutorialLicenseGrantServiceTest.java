@@ -31,6 +31,7 @@ class TutorialLicenseGrantServiceTest {
                 }
             }
 
+
             var settings = TutorialLicenseGrantSettings.from(Map.of(
                     "types", List.of("woodcutting", "mining", "fishing"),
                     "initial-grade", 9,
@@ -40,6 +41,9 @@ class TutorialLicenseGrantServiceTest {
             var service = new TutorialLicenseGrantService(db, licenses, settings);
             var playerId =  UUID.randomUUID();
             var beginner = new Progress(9, 0);
+            var lifeLicenses = new LifeLicenseRepository();
+
+            assertTrue(lifeLicenses.findProgress(connection, playerId, LicenseType.WOODCUTTING).isEmpty());
 
             assertFalse(licenses.meetsLicenseRequirement(
                     connection, playerId, LicenseType.WOODCUTTING
@@ -75,6 +79,8 @@ class TutorialLicenseGrantServiceTest {
                 assertEquals(1, remove.executeUpdate());
             }
 
+            assertThrows(SQLException.class, () -> lifeLicenses.findProgress(connection, playerId, LicenseType.FISHING));
+
             service.grantInitialLicense(playerId);
             service.grantInitialLicense(playerId);
 
@@ -83,6 +89,10 @@ class TutorialLicenseGrantServiceTest {
                     "mining", beginner,
                     "fishing", beginner
             ), readLicenses(connection, playerId));
+            assertEquals(
+                    new LifeLicenseRepository.Progress(8, 120),
+                    lifeLicenses.findProgress(connection, playerId, LicenseType.WOODCUTTING).orElseThrow()
+            );
 
             var customSettings = TutorialLicenseGrantSettings.from(Map.of(
                     "types", List.of("mining"),
