@@ -38,10 +38,10 @@ class TutorialLicenseGrantServiceTest {
                     "initial-experience", 0
             ));
             var licenses = new PlayerLicenseRepository();
-            var service = new TutorialLicenseGrantService(db, licenses, settings);
+            var lifeLicenses = new LifeLicenseRepository();
+            var service = new TutorialLicenseGrantService(db, lifeLicenses, settings);
             var playerId =  UUID.randomUUID();
             var beginner = new Progress(9, 0);
-            var lifeLicenses = new LifeLicenseRepository();
 
             assertTrue(lifeLicenses.findProgress(connection, playerId, LicenseType.WOODCUTTING).isEmpty());
 
@@ -99,7 +99,7 @@ class TutorialLicenseGrantServiceTest {
                     "initial-grade", 8,
                     "initial-experience", 25
             ));
-            var customService = new TutorialLicenseGrantService(db, licenses, customSettings);
+            var customService = new TutorialLicenseGrantService(db, lifeLicenses, customSettings);
 
             var anotherPlayer = UUID.randomUUID();
             customService.grantInitialLicense(anotherPlayer);
@@ -120,6 +120,31 @@ class TutorialLicenseGrantServiceTest {
             assertThrows(SQLException.class, () -> service.grantInitialLicense(failedPlayer));
             assertFalse(licenses.owns(connection, failedPlayer, LicenseType.WOODCUTTING));
             assertTrue(readLicenses(connection, failedPlayer).isEmpty());
+
+            var farmer = UUID.randomUUID();
+
+            // 자동 커밋 상태에서 호출해도 보유 행만 남는 일이 없어야 한다.
+            assertThrows(IllegalStateException.class, () -> lifeLicenses.grantIfMissing(
+                    connection, farmer, LicenseType.FARMING, 9, 0
+            ));
+            assertFalse(licenses.owns(connection, farmer, LicenseType.FARMING));
+
+            try (var transaction = db.getConnection()) {
+                transaction.setAutoCommit(false);
+                try {
+                    lifeLicenses.grantIfMissing(transaction, farmer, LicenseType.FARMING, 9, 0);
+                    transaction.commit();
+                } catch (SQLException | RuntimeException failure) {
+                    transaction.rollback();
+                    throw failure;
+                }
+            }
+
+            assertEquals(
+                    new LifeLicenseRepository.Progress(9, 0),
+                    lifeLicenses.findProgress(connection, farmer, LicenseType.FARMING).orElseThrow()
+            );
+            assertFalse(licenses.owns(connection, farmer, LicenseType.WOODCUTTING));
         }
     }
 

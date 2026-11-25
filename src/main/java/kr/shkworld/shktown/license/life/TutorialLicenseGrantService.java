@@ -9,10 +9,10 @@ import java.util.UUID;
 
 public final class TutorialLicenseGrantService {
     private final DataSource dataSource;
-    private final PlayerLicenseRepository licenses;
+    private final LifeLicenseRepository licenses;
     private final TutorialLicenseGrantSettings settings;
 
-    public TutorialLicenseGrantService(DataSource dataSource, PlayerLicenseRepository licenses, TutorialLicenseGrantSettings settings) {
+    public TutorialLicenseGrantService(DataSource dataSource, LifeLicenseRepository licenses, TutorialLicenseGrantSettings settings) {
         this.dataSource = Objects.requireNonNull(dataSource);
         this.licenses = Objects.requireNonNull(licenses);
         this.settings = Objects.requireNonNull(settings);
@@ -28,7 +28,7 @@ public final class TutorialLicenseGrantService {
             connection.setAutoCommit(false);
             try {
                 for (var type : settings.types()) {
-                    licenses.grantIfMissing(connection, playerId, type);
+                    licenses.grantIfMissing(connection, playerId, type, settings.initialGrade(), settings.initialExperience());
                     String sql = """
                             INSERT INTO life_license_progress (player_uuid, license_id, grade, experience)
                             VALUES (?, ?, ?, ?)
