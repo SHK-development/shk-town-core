@@ -1,21 +1,4 @@
 name: SHKTown
-version: 1.2
+version: '0.1.0-SNAPSHOT'
 main: kr.shkworld.shktown.SHKTown
 api-version: '26.3'
-
-depend: [BetterHud, CraftEngine, Vault, Citizens]
-softdepend: [Essentials, LuckPerms, WorldGuard]
-
-commands:
-  shktown:
-    description: SHKTown 관리 명령어
-    usage: /shktown
-    aliases: [shk]
-
-permissions:
-  shktown.admin:
-    description: SHKTown 관리자 권한
-    default: op
-  shktown.shop.open:
-    description: 시스템 상점 열기 권한
-    default: true
