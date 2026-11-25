@@ -35,4 +35,28 @@ public final class PlayerLicenseRepository {
             }
         }
     }
+
+    public boolean meetsLicenseRequirement(Connection connection, UUID playerId, LicenseType type) throws SQLException {
+        return switch (type.getCategory()) {
+            case LIFE -> owns(connection, playerId, type);
+            case PROFESSIONAL -> isProfessionalLicenseActive(connection, playerId, type.getId());
+        };
+    }
+
+    private boolean isProfessionalLicenseActive(Connection connection, UUID playerId, String licenseId) throws SQLException {
+        String sql = """
+            SELECT 1
+            FROM active_professional_licenses
+            WHERE player_uuid = ? AND license_id = ?
+            """;
+
+        try (var statement = connection.prepareStatement(sql)) {
+            statement.setString(1, playerId.toString());
+            statement.setString(2, licenseId);
+
+            try (var rows = statement.executeQuery()) {
+                return rows.next();
+            }
+        }
+    }
 }

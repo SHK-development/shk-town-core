@@ -72,9 +72,21 @@ class ProfessionalLicenseServiceTest {
             assertEquals(SLOTS_FULL, service.change(player, "test_d", professional, true));
             assertEquals(ALREADY_ACTIVE, service.change(player, "test_a", professional, true));
 
-            assertEquals(DEACTIVATED, service.change(player, "test_a", professional, false));
-            assertEquals(ALREADY_INACTIVE, service.change(player, "test_a", professional, false));
+            assertEquals(RELINQUISHED, service.change(player, "test_a", professional, false));
+
+            // 해제된 자격으로 바로 재장착하거나 중복 해제할 수 없다.
+            assertEquals(NOT_OWNED, service.change(player, "test_a", professional, true));
+            assertEquals(NOT_OWNED, service.change(player, "test_a", professional, false));
+
+            // 반환된 한 칸은 이미 보유 중인 다른 자격이 사용할 수 있다.
             assertEquals(ACTIVATED, service.change(player, "test_d", professional, true));
+
+            // A를 재취득할 수 있지만 다시 장착하려면 빈 슬롯이 필요하다.
+            grant(connection, "test_a");
+            assertEquals(SLOTS_FULL, service.change(player, "test_a", professional, true));
+
+            assertEquals(RELINQUISHED, service.change(player, "test_d", professional, false));
+            assertEquals(ACTIVATED, service.change(player, "test_a", professional, true));
         }
     }
 

@@ -13,7 +13,7 @@ public final class ProfessionalLicenseService {
     public enum Result {
         ACTIVATED,
         ALREADY_ACTIVE,
-        DEACTIVATED,
+        RELINQUISHED,
         ALREADY_INACTIVE,
         NOT_OWNED,
         NOT_PROFESSIONAL,
@@ -32,7 +32,7 @@ public final class ProfessionalLicenseService {
         return change(playerId, type.getId(), type.getCategory(), true);
     }
 
-    public Result deactivate(UUID playerId, LicenseType type) throws SQLException {
+    public Result relinquish(UUID playerId, LicenseType type) throws SQLException {
         return change(playerId, type.getId(), type.getCategory(), false);
     }
 
@@ -122,15 +122,41 @@ public final class ProfessionalLicenseService {
             return Result.SLOTS_FULL;
         }
 
-        String sql = activate
-                ? "INSERT INTO active_professional_licenses (player_uuid, license_id) VALUES (?, ?)"
-                : "DELETE FROM active_professional_licenses WHERE player_uuid = ? AND license_id = ?";
-        try (var statement = connection.prepareStatement(sql)) {
+        if (activate) {
+            try (var statement = connection.prepareStatement("""
+            INSERT INTO active_professional_licenses (player_uuid, license_id)
+            VALUES (?, ?)
+            """)) {
+                statement.setString(1, playerId.toString());
+                statement.setString(2, licenseId);
+                statement.executeUpdate();
+            }
+            return Result.ACTIVATED;
+        }
+
+        try (var statement = connection.prepareStatement("""
+        DELETE FROM active_professional_licenses
+        WHERE player_uuid = ? AND license_id = ?
+        """)) {
             statement.setString(1, playerId.toString());
             statement.setString(2, licenseId);
-            statement.executeUpdate();
+            if (statement.executeUpdate() != 1) {
+                throw new SQLException("직접 해제할 전문 자격의 활성 기록이 없습니다.");
+            }
         }
-        return activate ? Result.ACTIVATED : Result.DEACTIVATED;
+
+        try (var statement = connection.prepareStatement("""
+        DELETE FROM player_licenses
+        WHERE player_uuid = ? AND license_id = ?
+        """)) {
+            statement.setString(1, playerId.toString());
+            statement.setString(2, licenseId);
+            if (statement.executeUpdate() != 1) {
+                throw new SQLException("직접 해제할 전문 자격의 보유 기록이 없습니다.");
+            }
+        }
+
+        return Result.RELINQUISHED;
     }
 
     private int countActive(Connection connection, UUID playerId) throws SQLException {

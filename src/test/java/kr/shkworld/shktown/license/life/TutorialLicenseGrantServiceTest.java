@@ -41,7 +41,19 @@ class TutorialLicenseGrantServiceTest {
             var playerId =  UUID.randomUUID();
             var beginner = new Progress(9, 0);
 
+            assertFalse(licenses.meetsLicenseRequirement(
+                    connection, playerId, LicenseType.WOODCUTTING
+            ));
+
             service.grantInitialLicense(playerId);
+
+            assertTrue(licenses.meetsLicenseRequirement(
+                    connection, playerId, LicenseType.WOODCUTTING
+            ));
+            assertFalse(licenses.meetsLicenseRequirement(
+                    connection, playerId, LicenseType.FARMING
+            ));
+
             assertEquals(Map.of(
                     "woodcutting", beginner,
                     "mining", beginner,

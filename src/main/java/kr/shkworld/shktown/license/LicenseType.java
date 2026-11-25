@@ -4,7 +4,7 @@ public enum LicenseType {
     WOODCUTTING("woodcutting", LicenseCategory.LIFE),
     MINING("mining", LicenseCategory.LIFE),
     FISHING("fishing", LicenseCategory.LIFE),
-    FRAMING("farming", LicenseCategory.LIFE),
+    FARMING("farming", LicenseCategory.LIFE),
     GATHERING("gathering", LicenseCategory.LIFE),
     SKINNING("skinning", LicenseCategory.LIFE);
 
