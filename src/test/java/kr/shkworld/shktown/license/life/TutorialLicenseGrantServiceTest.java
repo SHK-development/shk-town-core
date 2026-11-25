@@ -145,6 +145,21 @@ class TutorialLicenseGrantServiceTest {
                     lifeLicenses.findProgress(connection, farmer, LicenseType.FARMING).orElseThrow()
             );
             assertFalse(licenses.owns(connection, farmer, LicenseType.WOODCUTTING));
+
+            var graduatingPlayer = UUID.randomUUID();
+
+            try (var transaction = db.getConnection()) {
+                transaction.setAutoCommit(false);
+
+                service.grantInitialLicense(transaction, graduatingPlayer);
+                assertTrue(licenses.owns(transaction, graduatingPlayer, LicenseType.WOODCUTTING));
+
+                transaction.rollback();
+            }
+
+            assertFalse(licenses.owns(connection, graduatingPlayer, LicenseType.WOODCUTTING));
+            assertFalse(licenses.owns(connection, graduatingPlayer, LicenseType.FISHING));
+            assertFalse(licenses.owns(connection, graduatingPlayer, LicenseType.MINING));
         }
     }
 
