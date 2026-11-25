@@ -171,4 +171,59 @@ public final class ProfessionalLicenseService {
             }
         }
     }
+
+    public void acquire(UUID playerId, LicenseType type) throws SQLException {
+        Objects.requireNonNull(type);
+
+        if (type.getCategory() != LicenseCategory.PROFESSIONAL) {
+            throw new IllegalArgumentException("전문 라이선스만 취득할 수 있습니다.");
+        }
+
+        acquireProfessional(playerId, type.getId());
+    }
+
+    void acquireProfessional(UUID playerId, String licenseId) throws SQLException {
+        Objects.requireNonNull(playerId);
+        Objects.requireNonNull(licenseId);
+
+        try (var connection = dataSource.getConnection()) {
+            connection.setAutoCommit(false);
+            try {
+                lockSlots(connection, playerId);
+
+                String grant = """
+                    INSERT INTO player_licenses (player_uuid, license_id)
+                    VALUES (?, ?)
+                    ON DUPLICATE KEY UPDATE license_id = player_licenses.license_id
+                    """;
+                try (var statement = connection.prepareStatement(grant)) {
+                    statement.setString(1, playerId.toString());
+                    statement.setString(2, licenseId);
+                    statement.executeUpdate();
+                }
+
+                String initializeProgress = """
+                    INSERT INTO professional_license_progress
+                        (player_uuid, license_id, grade_code, experience)
+                    VALUES (?, ?, 'grade_3', 0)
+                    ON DUPLICATE KEY UPDATE
+                        license_id = professional_license_progress.license_id
+                    """;
+                try (var statement = connection.prepareStatement(initializeProgress)) {
+                    statement.setString(1, playerId.toString());
+                    statement.setString(2, licenseId);
+                    statement.executeUpdate();
+                }
+
+                connection.commit();
+            } catch (SQLException | RuntimeException failure) {
+                try {
+                    connection.rollback();
+                } catch (SQLException rollbackFailure) {
+                    failure.addSuppressed(rollbackFailure);
+                }
+                throw failure;
+            }
+        }
+    }
 }
