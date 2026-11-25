@@ -225,4 +225,54 @@ class ProfessionalLicenseServiceTest {
             assertEquals(4, afterRelinquish.available());
         }
     }
+
+    @Test
+    void equippedListShowsOnlyThisPlayersActiveLicensesAndProgress() throws Exception {
+        try (var connection = openDatabase()) {
+            var service = new ProfessionalLicenseService(
+                    db, new ProfessionalSlotSettings(3, 9)
+            );
+            var category = LicenseCategory.PROFESSIONAL;
+            var otherPlayer = UUID.randomUUID();
+
+            assertTrue(service.getEquippedLicenses(player).isEmpty());
+
+            service.acquireProfessional(player, "test_a");
+            service.acquireProfessional(player, "test_b");
+            service.acquireProfessional(otherPlayer, "test_a");
+
+            assertEquals(ACTIVATED, service.change(player, "test_a", category, true));
+            assertEquals(ACTIVATED, service.change(otherPlayer, "test_a", category, true));
+
+            // 같은 자격을 장착한 두 사람의 성장 기록을 구분할 수 있도록 준비한다.
+            try (var statement = connection.prepareStatement("""
+                UPDATE professional_license_progress
+                SET grade_code = ?, experience = ?
+                WHERE player_uuid = ? AND license_id = ?
+                """)) {
+                statement.setString(1, "pre_grade_2");
+                statement.setInt(2, 120);
+                statement.setString(3, player.toString());
+                statement.setString(4, "test_a");
+                assertEquals(1, statement.executeUpdate());
+            }
+
+            assertEquals(
+                    List.of(new ProfessionalLicenseService.EquippedLicense(
+                            "test_a", "pre_grade_2", 120
+                    )),
+                    service.getEquippedLicenses(player)
+            );
+            assertEquals(
+                    List.of(new ProfessionalLicenseService.EquippedLicense(
+                            "test_a", "grade_3", 0
+                    )),
+                    service.getEquippedLicenses(otherPlayer)
+            );
+
+            assertEquals(RELINQUISHED, service.change(player, "test_a", category, false));
+            assertTrue(service.getEquippedLicenses(player).isEmpty());
+            assertEquals(1, service.getEquippedLicenses(otherPlayer).size());
+        }
+    }
 }

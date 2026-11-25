@@ -6,6 +6,8 @@ import kr.shkworld.shktown.license.LicenseType;
 import javax.sql.DataSource;
 import java.sql.Connection;
 import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
 
@@ -64,6 +66,44 @@ public final class ProfessionalLicenseService {
         }
     }
 
+    public record EquippedLicense(String licenseId, String gradeCode, int experience) {}
+
+    public List<EquippedLicense> getEquippedLicenses(UUID playerId) throws SQLException {
+        Objects.requireNonNull(playerId);
+
+        String sql = """
+            SELECT a.license_id, p.grade_code, p.experience
+            FROM active_professional_licenses a
+            LEFT JOIN professional_license_progress p
+              ON p.player_uuid = a.player_uuid
+             AND p.license_id = a.license_id
+            WHERE a.player_uuid = ?
+            ORDER BY a.license_id
+            """;
+
+        try (var connection = dataSource.getConnection();
+             var statement = connection.prepareStatement(sql)) {
+            statement.setString(1, playerId.toString());
+
+            try (var rows = statement.executeQuery()) {
+                var equipped = new ArrayList<EquippedLicense>();
+
+                while (rows.next()) {
+                    String licenseId = rows.getString("license_id");
+                    String gradeCode = rows.getString("grade_code");
+
+                    if (gradeCode == null) {
+                        throw new SQLException("장착된 전문 자격의 성장 기록이 없습니다. player=" + playerId + ", license=" + licenseId);
+                    }
+
+                    equipped.add(new EquippedLicense(licenseId, gradeCode, rows.getInt("experience")));
+                }
+
+                return List.copyOf(equipped);
+            }
+        }
+    }
+
     public Result activate(UUID playerId, LicenseType type) throws SQLException {
         return change(playerId, type.getId(), type.getCategory(), true);
     }
@@ -84,9 +124,7 @@ public final class ProfessionalLicenseService {
             connection.setAutoCommit(false);
             try {
                 int extraSlots = lockSlots(connection, playerId);
-                Result result = changeLocked(
-                        connection, playerId, licenseId, activate, settings.capacity(extraSlots)
-                );
+                Result result = changeLocked(connection, playerId, licenseId, activate, settings.capacity(extraSlots));
                 connection.commit();
                 return result;
             } catch (SQLException | RuntimeException failure) {
