@@ -182,4 +182,47 @@ class ProfessionalLicenseServiceTest {
             }
         }
     }
+
+    @Test
+    void slotUsageTracksEquippedLicensesAndKeepsPermanentExpansion() throws Exception {
+        try (var connection = openDatabase()) {
+            var service = new ProfessionalLicenseService(
+                    db, new ProfessionalSlotSettings(3, 9)
+            );
+            var category = LicenseCategory.PROFESSIONAL;
+
+            // 신규 플레이어는 슬롯 관리 행이 없어도 기본 3칸을 조회할 수 있다.
+            var initial = service.getSlotUsage(player);
+            assertEquals(0, initial.used());
+            assertEquals(3, initial.capacity());
+            assertEquals(3, initial.available());
+
+            service.acquireProfessional(player, "test_a");
+            assertEquals(0, service.getSlotUsage(player).used());
+
+            assertEquals(ACTIVATED, service.change(player, "test_a", category, true));
+
+            // 크레딧 결제는 이후 단계이므로 이미 1칸 확장한 상태만 준비한다.
+            try (var statement = connection.prepareStatement("""
+                UPDATE professional_license_slots
+                SET extra_slots = 1
+                WHERE player_uuid = ?
+                """)) {
+                statement.setString(1, player.toString());
+                assertEquals(1, statement.executeUpdate());
+            }
+
+            var equipped = service.getSlotUsage(player);
+            assertEquals(1, equipped.used());
+            assertEquals(4, equipped.capacity());
+            assertEquals(3, equipped.available());
+
+            assertEquals(RELINQUISHED, service.change(player, "test_a", category, false));
+
+            var afterRelinquish = service.getSlotUsage(player);
+            assertEquals(0, afterRelinquish.used());
+            assertEquals(4, afterRelinquish.capacity());
+            assertEquals(4, afterRelinquish.available());
+        }
+    }
 }

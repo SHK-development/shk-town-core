@@ -28,6 +28,42 @@ public final class ProfessionalLicenseService {
         this.settings = Objects.requireNonNull(settings);
     }
 
+    public record SlotUsage(int used, int capacity) {
+        public int available() {
+            return Math.max(0, capacity - used);
+        }
+    }
+
+    public SlotUsage getSlotUsage(UUID playerId) throws SQLException {
+        Objects.requireNonNull(playerId);
+
+        String sql = """
+            SELECT
+                (SELECT COUNT(*)
+                 FROM active_professional_licenses
+                 WHERE player_uuid = ?) AS used_slots,
+                COALESCE(
+                    (SELECT extra_slots
+                     FROM professional_license_slots
+                     WHERE player_uuid = ?),
+                    0
+                ) AS extra_slots
+            """;
+
+        try (var connection = dataSource.getConnection();
+             var statement = connection.prepareStatement(sql)) {
+            statement.setString(1, playerId.toString());
+            statement.setString(2, playerId.toString());
+
+            try (var rows = statement.executeQuery()) {
+                rows.next();
+                int used = rows.getInt("used_slots");
+                int capacity = settings.capacity(rows.getInt("extra_slots"));
+                return new SlotUsage(used, capacity);
+            }
+        }
+    }
+
     public Result activate(UUID playerId, LicenseType type) throws SQLException {
         return change(playerId, type.getId(), type.getCategory(), true);
     }
